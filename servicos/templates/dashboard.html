@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Financeiro Lava-Rápido{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Dashboard</h1>
+    <a href="{% url 'servicos:execucoes_criar' %}" class="btn btn-primary">+ Novo lançamento</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase small mb-2">Faturado hoje</h6>
+                <div class="valor-destaque text-success">R$ {{ total_dia|floatformat:2 }}</div>
+                <div class="text-muted small">{{ qtd_dia }} lançamento{{ qtd_dia|pluralize }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase small mb-2">Faturado no mês</h6>
+                <div class="valor-destaque text-primary">R$ {{ total_mes|floatformat:2 }}</div>
+                <div class="text-muted small">{{ qtd_mes }} lançamento{{ qtd_mes|pluralize }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase small mb-2">Serviço mais realizado (mês)</h6>
+                {% if servico_top %}
+                    <div class="fs-4 fw-semibold">{{ servico_top.servico__nome }}</div>
+                    <div class="text-muted small">{{ servico_top.quantidade }} execuç{{ servico_top.quantidade|pluralize:"ão,ões" }}</div>
+                {% else %}
+                    <div class="text-muted">Sem lançamentos este mês.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-white">
+        <strong>Últimos lançamentos</strong>
+    </div>
+    <div class="card-body p-0">
+        {% if ultimos_lancamentos %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Serviço</th>
+                        <th>Valor cobrado</th>
+                        <th>Observação</th>
+                        <th>Data/hora</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for execucao in ultimos_lancamentos %}
+                    <tr>
+                        <td>{{ execucao.servico.nome }}</td>
+                        <td>R$ {{ execucao.valor_cobrado|floatformat:2 }}</td>
+                        <td class="text-muted">{{ execucao.observacao|default:"—" }}</td>
+                        <td>{{ execucao.data_hora|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted p-3 mb-0">Nenhum lançamento registrado ainda.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

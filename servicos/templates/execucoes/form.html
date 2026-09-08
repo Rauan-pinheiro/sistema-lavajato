@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Novo Lançamento | Financeiro Lava-Rápido{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-4">Novo lançamento</h1>
+
+<div class="row g-4">
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.servico.id_for_label }}" class="form-label">Serviço</label>
+                        {{ form.servico }}
+                        {% for error in form.servico.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.valor_cobrado.id_for_label }}" class="form-label">Valor cobrado (R$)</label>
+                        {{ form.valor_cobrado }}
+                        <div class="form-text">Preenchido automaticamente com o valor padrão do serviço; ajuste se necessário.</div>
+                        {% for error in form.valor_cobrado.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ form.observacao.id_for_label }}" class="form-label">Observação (opcional)</label>
+                        {{ form.observacao }}
+                        {% for error in form.observacao.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Registrar lançamento</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header bg-white">
+                <strong>Lançamentos recentes</strong>
+            </div>
+            <div class="card-body p-0">
+                {% if ultimos_lancamentos %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Serviço</th>
+                                <th>Valor</th>
+                                <th>Data/hora</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for execucao in ultimos_lancamentos %}
+                            <tr>
+                                <td>{{ execucao.servico.nome }}</td>
+                                <td>R$ {{ execucao.valor_cobrado|floatformat:2 }}</td>
+                                <td>{{ execucao.data_hora|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted p-3 mb-0">Nenhum lançamento registrado ainda.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ valores_padrao|json_script:"valores-padrao-data" }}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    (function () {
+        var valoresPadrao = JSON.parse(document.getElementById('valores-padrao-data').textContent);
+        var selectServico = document.getElementById('id_servico');
+        var inputValor = document.getElementById('id_valor_cobrado');
+
+        function preencherValorPadrao() {
+            var valor = valoresPadrao[selectServico.value];
+            if (valor !== undefined) {
+                inputValor.value = valor;
+            }
+        }
+
+        if (selectServico && inputValor) {
+            selectServico.addEventListener('change', preencherValorPadrao);
+            // Preenche automaticamente ao carregar a página, se nenhum valor já foi digitado.
+            if (!inputValor.value) {
+                preencherValorPadrao();
+            }
+        }
+    })();
+</script>
+{% endblock %}
