@@ -51,9 +51,18 @@ depois de autenticado.
 ### Criando os usuários
 
 O sistema é pensado para **2 usuários** (donos/funcionários responsáveis pelo
-financeiro), ambos com acesso igual a tudo.
+financeiro), ambos com acesso igual a tudo. Existem dois comandos, para dois
+cenários diferentes:
 
-#### Opção A — comando `criar_usuarios_iniciais` (recomendado)
+- `criar_usuarios_iniciais` — **interativo**, pergunta usuário/senha pelo
+  terminal. Use localmente, ou em produção se você tiver Shell disponível
+  (plano pago do Render).
+- `criar_usuarios_producao` — **não-interativo**, lê usuário/senha de
+  variáveis de ambiente. Pensado para rodar sozinho durante o build, sem
+  precisar de Shell (ver [Criando os usuários em produção](#criando-os-usuários-em-produção-render-plano-free--sem-shell)).
+  Também pode ser rodado localmente, definindo as variáveis antes do comando.
+
+#### Opção A — comando `criar_usuarios_iniciais` (interativo, recomendado localmente)
 
 Comando interativo que pergunta usuário e senha para cada pessoa (a senha não fica
 visível no terminal e não fica salva em nenhum arquivo/histórico de shell):
@@ -81,22 +90,48 @@ python manage.py createsuperuser
 Com pelo menos um superusuário já criado (via `createsuperuser`), acesse
 `/admin/` → **Users** → **Add user** para cadastrar a segunda pessoa.
 
-### Criando os usuários em produção (Render)
+### Criando os usuários em produção (Render, plano free — sem Shell)
 
-1. No painel do serviço no Render, abra a aba **Shell** (terminal remoto do serviço
-   já em execução).
-2. Rode o mesmo comando usado localmente:
-   ```bash
-   python manage.py criar_usuarios_iniciais
-   ```
-   ou `python manage.py createsuperuser` se preferir a Opção B.
-3. Responda aos prompts de usuário/senha normalmente — o Shell do Render é
-   interativo, então o `getpass` (senha oculta) funciona como no terminal local.
-4. Feche o Shell. Os usuários já podem logar em `https://<seu-app>.onrender.com/login/`.
+O plano **free** do Render não tem aba **Shell** (recurso do plano pago Starter),
+então não dá para rodar `criar_usuarios_iniciais` (interativo) direto em produção.
+Por isso os 2 usuários são criados **automaticamente durante o build**, pelo comando
+não-interativo `criar_usuarios_producao`, que lê as credenciais de variáveis de
+ambiente e já está encadeado no `build.sh` logo após o `migrate`.
 
-> Rode isso **uma única vez** por usuário. Para trocar uma senha depois, use
-> `python manage.py changepassword <usuario>` (local ou no Shell do Render) ou
-> edite pelo `/admin/`.
+1. **Antes do próximo deploy**, no painel do Render vá em
+   **seu serviço web → Environment** e adicione 4 variáveis:
+   - `USUARIO_1_NOME` e `USUARIO_1_SENHA`
+   - `USUARIO_2_NOME` e `USUARIO_2_SENHA`
+
+   Escolha você mesmo o usuário e a senha de cada pessoa (senha forte, sem
+   valor padrão/fraco). Essas variáveis ficam guardadas apenas no painel do
+   Render — nunca vão para o repositório.
+2. Faça o deploy (push no repositório, ou "Manual Deploy" no painel). O
+   `build.sh` roda `migrate` e, em seguida, `criar_usuarios_producao`, que:
+   - cria os 2 usuários com `is_staff=True` (podem acessar `/admin/` se precisar,
+     mas não são superusuário);
+   - **não falha o build** se alguma variável estiver ausente — só avisa no
+     log do build e pula aquele usuário;
+   - é **idempotente**: se um usuário com aquele username já existir (por
+     exemplo, em um deploy anterior), ele é ignorado com o aviso
+     `usuário "X" já existe, ignorado` — não duplica, não dá erro.
+3. Confira no log do build (aba **Logs** do serviço) se apareceu
+   `Usuário "..." criado com sucesso` para os 2 usuários.
+4. Os usuários já podem logar em `https://<seu-app>.onrender.com/login/` com o
+   usuário/senha que você definiu no passo 1.
+
+> **Recomendação de segurança (não implementada ainda, fica para depois):**
+> depois que os usuários conseguirem logar com sucesso, o ideal é cada um trocar
+> essa senha inicial por uma escolhida por eles — hoje a única forma é pelo
+> `/admin/` (usuário logado → link "CHANGE PASSWORD" no topo da página) ou, se
+> tiver acesso ao Shell (plano pago), `manage.py changepassword <usuario>`. Uma
+> tela própria de "alterar senha" no sistema (`PasswordChangeView` do Django)
+> é uma boa evolução futura, mas não é obrigatória agora.
+>
+> Depois que os 2 usuários forem criados com sucesso, também vale remover
+> `USUARIO_1_SENHA`/`USUARIO_2_SENHA` da aba Environment do Render (ou trocar
+> por um valor qualquer) — como o comando é idempotente, isso não afeta os
+> usuários já criados, e evita manter a senha real guardada ali indefinidamente.
 
 ## Segurança
 
@@ -123,16 +158,23 @@ produção (`psycopg2-binary`, `dj-database-url`, `whitenoise`, `gunicorn`) pron
      `DATABASE_URL`.
 3. O Render injeta `RENDER_EXTERNAL_HOSTNAME` automaticamente — o `settings.py` já
    usa essa variável para liberar o domínio `*.onrender.com` em `ALLOWED_HOSTS`.
-4. Após o primeiro deploy, crie os 2 usuários pelo Shell do Render (veja
-   [Criando os usuários em produção](#criando-os-usuários-em-produção-render)).
+4. **Antes desse primeiro deploy** (ou antes de qualquer redeploy, se ainda não
+   tiver feito), cadastre também `USUARIO_1_NOME`, `USUARIO_1_SENHA`,
+   `USUARIO_2_NOME`, `USUARIO_2_SENHA` na aba **Environment** do serviço web —
+   o `build.sh` usa essas variáveis para criar os 2 usuários de login
+   automaticamente, sem precisar de Shell (veja
+   [Criando os usuários em produção](#criando-os-usuários-em-produção-render-plano-free--sem-shell)).
 
 ### Variáveis de ambiente usadas
 
-| Variável                    | Local (opcional)         | Render (produção)                  |
-|------------------------------|---------------------------|-------------------------------------|
-| `SECRET_KEY`                 | usa fallback de dev       | gerada automaticamente              |
-| `DEBUG`                      | `True` para ver erros     | `False`                             |
-| `DATABASE_URL`                | ausente → cai no SQLite   | preenchida pelo banco Postgres      |
-| `RENDER_EXTERNAL_HOSTNAME`    | não se aplica             | definida automaticamente pelo Render|
+| Variável                   | Local (opcional)        | Render (produção)                    |
+|-----------------------------|---------------------------|----------------------------------------|
+| `SECRET_KEY`                | usa fallback de dev       | gerada automaticamente                 |
+| `DEBUG`                     | `True` para ver erros     | `False`                                |
+| `DATABASE_URL`              | ausente → cai no SQLite   | preenchida pelo banco Postgres         |
+| `RENDER_EXTERNAL_HOSTNAME`  | não se aplica             | definida automaticamente pelo Render   |
+| `USUARIO_1_NOME` / `USUARIO_1_SENHA` | não usada localmente (use `criar_usuarios_iniciais`) | **defina manualmente** antes do deploy |
+| `USUARIO_2_NOME` / `USUARIO_2_SENHA` | não usada localmente (use `criar_usuarios_iniciais`) | **defina manualmente** antes do deploy |
 
-Veja `.env.example` para o formato de cada uma.
+Veja `.env.example` para o formato de cada uma — ele só lista os *nomes* das
+variáveis, nunca valores reais (principalmente as senhas).
