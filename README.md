@@ -1,4 +1,14 @@
-# Financeiro Lava-Rápido
+# 🚗 Financeiro Lava-Rápido
+
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
+![Django](https://img.shields.io/badge/Django-092E20?style=flat&logo=django&logoColor=white)
+![Bootstrap](https://img.shields.io/badge/Bootstrap%205-7952B3?style=flat&logo=bootstrap&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)
+![Render](https://img.shields.io/badge/deploy-Render-46E3B7?style=flat&logo=render&logoColor=white)
+
+> **Destaques:** sistema enxuto que resolve um problema real de um lava-jato. Tem deploy automatizado no Render (`render.yaml` + `build.sh`), configuração por variáveis de ambiente, login obrigatório em todas as páginas e comandos próprios para criar os usuários em produção.
+
+<!-- Adicione aqui um print do dashboard: ![Dashboard](docs/dashboard.png) -->
 
 Sistema simples de controle financeiro para lavanderia/lavagem de veículos: cadastro de
 serviços, registro de execuções (lançamentos) com valor ajustável e um dashboard básico
@@ -178,3 +188,12 @@ produção (`psycopg2-binary`, `dj-database-url`, `whitenoise`, `gunicorn`) pron
 
 Veja `.env.example` para o formato de cada uma — ele só lista os *nomes* das
 variáveis, nunca valores reais (principalmente as senhas).
+
+## 🤝 Desenvolvido em parceria com o Claude
+
+Construí este sistema em parceria com o **Claude**, a IA da Anthropic, que trabalhou como meu par de programação. Eu conduzi o projeto: levantei as necessidades do negócio, tomei as decisões e validei tudo no uso real. O Claude me ajudou a escrever e revisar código, configurar o deploy e documentar.
+
+## 👨‍💻 Autor
+
+**Rauan Pinheiro Lima**
+[LinkedIn](https://linkedin.com/in/rauanpinheiro-dev) · [GitHub](https://github.com/Rauan-pinheiro)
